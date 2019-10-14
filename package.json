@@ -1,0 +1,42 @@
+{
+  "name": "tin-bank",
+  "version": "1.0.0",
+  "description": "TIN Bank example",
+  "main": "app.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arkgast/tin-bank.git"
+  },
+  "keywords": [
+    "TIN"
+  ],
+  "author": "Arnold Gandarillas Castillo <arkgast@gmail.com> (https://github.com/arkgast)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/arkgast/tin-bank/issues"
+  },
+  "homepage": "https://github.com/arkgast/tin-bank#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^8.2.0",
+    "@commitlint/config-conventional": "^8.2.0",
+    "cz-conventional-changelog": "^3.0.2",
+    "eslint": "^6.5.1",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-node": "^10.0.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "husky": "^3.0.9",
+    "lint-staged": "^9.4.2",
+    "node-dev": "^4.0.0",
+    "prettier-standard": "^15.0.1"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  }
+}
