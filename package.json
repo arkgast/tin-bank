@@ -4,7 +4,10 @@
   "description": "TIN Bank example",
   "main": "app.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "debug": "DEBUG=tin-bank* node-dev --respawn bin/www",
+    "dev": "node-dev --respawn bin/www",
+    "start": "node bin/www"
   },
   "repository": {
     "type": "git",
@@ -38,5 +41,12 @@
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
     }
+  },
+  "dependencies": {
+    "@webwallet/sdk": "^1.1.1",
+    "body-parser": "^1.19.0",
+    "config": "^3.2.3",
+    "express": "^4.17.1",
+    "tinapi_": "^0.3.5"
   }
 }
