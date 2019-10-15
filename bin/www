@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
-const http = require('http')
+require('dotenv').config()
+require('module-alias/register')
+
 const debug = require('debug')('tin-bank:server')
+const http = require('http')
 const config = require('config')
 
 const app = require('../app')

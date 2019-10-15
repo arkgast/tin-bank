@@ -1,6 +1,8 @@
 const express = require('express')
 const bodyParser = require('body-parser')
 
+require('@helpers/tin')
+
 const action = require('./routes/action')
 const credit = require('./routes/credit')
 const debit = require('./routes/debit')
