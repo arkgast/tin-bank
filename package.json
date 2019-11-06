@@ -53,6 +53,6 @@
     "dotenv": "^8.1.0",
     "express": "^4.17.1",
     "module-alias": "^2.2.2",
-    "tinapi_": "^0.3.5"
+    "tinapi_": "^0.3.8"
   }
 }
