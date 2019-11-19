@@ -15,6 +15,7 @@ const getActionDownload = action => {
     tx_ref: action.labels.tx_ref,
     type: 'DOWNLOAD'
   }
+  return createActionRequest
 }
 
 const createAndSignAction = async action => {
@@ -29,8 +30,8 @@ const createAndSignAction = async action => {
 
 router.post('/', async (req, res) => {
   const action = req.body
+  debug(JSON.stringify(action, null, 2))
   const actionSigned = await createAndSignAction(action)
-  debug(actionSigned)
 
   res.send(actionSigned)
 })

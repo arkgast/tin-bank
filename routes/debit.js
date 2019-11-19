@@ -58,14 +58,13 @@ const createAndSignAction = async action => {
 
   const iou = createIOU(actionCreated)
   const actionSigned = await api.signOffline(actionCreated.action_id, iou)
-  debug(actionSigned)
 
   return actionSigned
 }
 
 router.post('/', async (req, res) => {
   const action = req.body
-  debug(action)
+  debug(JSON.stringify(action, null, 2))
 
   const actionSigned = await createAndSignAction(action)
 
