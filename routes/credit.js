@@ -7,14 +7,21 @@ const router = express.Router()
 
 const getActionDownload = action => {
   const createActionRequest = new tinapi.CreateActionRequest()
-  createActionRequest.source = action.snapshot.target.signer.handle
-  createActionRequest.target = config.get('bank.signerAddress')
   createActionRequest.amount = action.amount
   createActionRequest.symbol = action.symbol
   createActionRequest.labels = {
     tx_ref: action.labels.tx_ref,
     type: 'DOWNLOAD'
   }
+
+  if (action.labels.status === 'REJECTED') {
+    createActionRequest.source = action.snapshot.source.signer.handle
+    createActionRequest.target = config.get('bank.signerAddress')
+  } else {
+    createActionRequest.source = action.snapshot.target.signer.handle
+    createActionRequest.target = config.get('bank.signerAddress')
+  }
+
   return createActionRequest
 }
 
