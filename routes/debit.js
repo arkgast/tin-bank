@@ -7,6 +7,8 @@ const sdk = require('@webwallet/sdk')
 const { KEEPER_PUBLIC, KEEPER_SECRET } = process.env
 const router = express.Router()
 
+const ASYNC = false
+
 const getActionUpload = action => {
   const createActionRequest = new tinapi.CreateActionRequest()
   createActionRequest.source = config.get('bank.signerAddress')
@@ -50,13 +52,35 @@ const createIOU = action => {
   return sdk.iou.write(claims).sign(signers)
 }
 
+const DELAY = 2000
+const callContinueWithDelay = (action, actionCreated, iou) => {
+  const timer = setTimeout(async () => {
+    debug('CALL CONTINUE')
+    const api = new tinapi.ActionApi()
+    const actionSigned = await api.signOffline(actionCreated.action_id, iou)
+
+    const transfer = new tinapi.TransferApi()
+    const actionContinue = await transfer.continueP2Ptranfer(action.action_id, {
+      actionSigned
+    })
+
+    debug('CONTINUE RESPONSE %O', actionContinue)
+    clearTimeout(timer)
+  }, DELAY)
+}
+
 const createAndSignAction = async action => {
   const api = new tinapi.ActionApi()
 
   const actionUpload = getActionUpload(action)
   const actionCreated = await api.createAction(actionUpload)
-
   const iou = createIOU(actionCreated)
+
+  if (ASYNC) {
+    callContinueWithDelay(action, actionCreated, iou)
+    return actionCreated
+  }
+
   const actionSigned = await api.signOffline(actionCreated.action_id, iou)
 
   return actionSigned
@@ -67,6 +91,7 @@ router.post('/', async (req, res) => {
   debug(JSON.stringify(action, null, 2))
 
   const actionSigned = await createAndSignAction(action)
+  debug('ACTION SIGNED %O', actionSigned)
 
   res.send(actionSigned)
 })

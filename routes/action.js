@@ -10,6 +10,7 @@ router.post('/', async (req, res) => {
 
   const api = new tinapi.ActionApi()
   const actionSigned = await api.signAction(action.action_id)
+  debug('ACTION SIGNED %O', actionSigned)
 
   res.json(actionSigned)
 })
