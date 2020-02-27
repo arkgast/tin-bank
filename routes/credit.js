@@ -5,7 +5,7 @@ const tinapi = require('tinapi_')
 
 const router = express.Router()
 
-const ASYNC = false
+const ASYNC = true
 
 const getActionDownload = action => {
   const createActionRequest = new tinapi.CreateActionRequest()
@@ -15,19 +15,19 @@ const getActionDownload = action => {
     tx_ref: action.labels.tx_ref,
     type: 'DOWNLOAD'
   }
+  createActionRequest.target = config.get('bank.signerAddress')
 
-  if (action.labels.status === 'REJECTED') {
+  const { status } = action.labels
+  if (status === 'REJECTED' || status === 'ERROR') {
     createActionRequest.source = action.snapshot.source.signer.handle
-    createActionRequest.target = config.get('bank.signerAddress')
   } else {
     createActionRequest.source = action.snapshot.target.signer.handle
-    createActionRequest.target = config.get('bank.signerAddress')
   }
 
   return createActionRequest
 }
 
-const DELAY = 2000
+const DELAY = 1000
 const callContinueWithDelay = (action, actionCreated) => {
   const timer = setTimeout(async () => {
     debug('CALL CONTINUE')
@@ -60,6 +60,7 @@ const createAndSignAction = async action => {
 }
 
 router.post('/', async (req, res) => {
+  // res.status(500).send({ message: 'Internal server error' })
   const action = req.body
   debug(JSON.stringify(action, null, 2))
 

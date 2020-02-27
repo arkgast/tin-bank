@@ -91,7 +91,7 @@ router.post('/', async (req, res) => {
   debug(JSON.stringify(action, null, 2))
 
   const actionSigned = await createAndSignAction(action)
-  debug('ACTION SIGNED %O', actionSigned)
+  debug('ACTION UPLOAD SIGNED %O', actionSigned)
 
   res.send(actionSigned)
 })
