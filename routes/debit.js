@@ -68,20 +68,23 @@ const callContinueWithDelay = (action, actionCreated, iou) => {
   }, DELAY)
 }
 
-const createAndSignAction = async action => {
+const createAction = async action => {
   const api = new tinapi.ActionApi()
-
   const actionUpload = getActionUpload(action)
   const actionCreated = await api.createAction(actionUpload)
-  const iou = createIOU(actionCreated)
+  return actionCreated
+}
+
+const signAction = async action => {
+  const api = new tinapi.ActionApi()
+  const iou = createIOU(action)
 
   if (ASYNC) {
-    callContinueWithDelay(action, actionCreated, iou)
-    return actionCreated
+    callContinueWithDelay(action, action, iou)
+    return action
   }
 
-  const actionSigned = await api.signOffline(actionCreated.action_id, iou)
-
+  const actionSigned = await api.signOffline(action.action_id, iou)
   return actionSigned
 }
 
@@ -89,7 +92,8 @@ router.post('/', async (req, res) => {
   const action = req.body
   debug(JSON.stringify(action, null, 2))
 
-  const actionSigned = await createAndSignAction(action)
+  const actionCreated = await createAction(action)
+  const actionSigned = await signAction(actionCreated)
   debug('ACTION UPLOAD SIGNED %O', actionSigned)
 
   res.send(actionSigned)
