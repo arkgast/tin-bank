@@ -6,7 +6,7 @@ const router = express.Router()
 
 router.post('/', async (req, res) => {
   const action = req.body
-  debug(JSON.stringify(action, null, 2))
+  debug('ACTION %O', action)
 
   const api = new tinapi.ActionApi()
   const actionSigned = await api.signAction(action.action_id)
