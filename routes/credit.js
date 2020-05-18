@@ -44,27 +44,31 @@ const callContinueWithDelay = (action, actionCreated) => {
   }, DELAY)
 }
 
-const createAndSignAction = async action => {
+const createAction = async action => {
   const api = new tinapi.ActionApi()
-
   const actionDownload = getActionDownload(action)
   const actionCreated = await api.createAction(actionDownload)
+  return actionCreated
+}
+
+const signAction = async action => {
+  const api = new tinapi.ActionApi()
 
   if (ASYNC) {
-    callContinueWithDelay(action, actionCreated)
-    return actionCreated
+    callContinueWithDelay(action, action)
+    return action
   }
 
-  const actionSigned = await api.signAction(actionCreated.action_id)
+  const actionSigned = await api.signAction(action.action_id)
   return actionSigned
 }
 
 router.post('/', async (req, res) => {
-  // res.status(500).send({ message: 'Internal server error' })
   const action = req.body
   debug(JSON.stringify(action, null, 2))
 
-  const actionSigned = await createAndSignAction(action)
+  const actionCreated = await createAction(action)
+  const actionSigned = await signAction(actionCreated)
   debug('ACTION SIGNED %O', actionSigned)
 
   res.send(actionSigned)
