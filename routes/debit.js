@@ -4,7 +4,6 @@ const debug = require('debug')('tin-bank:debit')
 const tinapi = require('tinapi_')
 const sdk = require('@webwallet/sdk')
 
-const { KEEPER_PUBLIC, KEEPER_SECRET } = process.env
 const router = express.Router()
 
 const ASYNC = false
@@ -38,8 +37,8 @@ const getClaims = action => {
 const getSigners = () => {
   return [
     {
-      secret: KEEPER_SECRET,
-      public: KEEPER_PUBLIC,
+      secret: config.get('bank.secretKey'),
+      public: config.get('bank.publicKey'),
       scheme: 'ecdsa-ed25519',
       signer: config.get('bank.signerAddress')
     }

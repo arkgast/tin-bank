@@ -1,25 +1,20 @@
+const {
+  URL,
+  BANK_SIGNER,
+  BANK_PUBLIC_KEY,
+  BANK_SECRET_KEY,
+  ACH_SIGNER
+} = process.env
+
 module.exports = {
   port: 3000,
-  // dev
-  projectUrl: 'https://achtin-dev.minka.io/v1/',
-  // test
-  // projectUrl: 'https://ach-minka-tst.transferenciasinmediatas.com/v1/',
-  // stg
-  // projectUrl: 'https://ach-minka-stg.transferenciasinmediatas.com/v1/',
+  projectUrl: URL,
   bank: {
-    // dev
-    signerAddress: 'wXxkZBZj78UMSkq6EUFMCJXpQLw4AGNNju'
-    // test
-    // signerAddress: 'wPCm3BjkpbBJgVLpAqWegAWWhWRQ3F9dCV'
-    // stg
-    // signerAddress: 'wWeBKSMFHTodYRvUE45bNV4cyGoCbJS9se'
+    signerAddress: BANK_SIGNER,
+    publicKey: BANK_PUBLIC_KEY,
+    secretKey: BANK_SECRET_KEY
   },
   ach: {
-    // dev
-    signerAddress: 'we33fhXdMQ2YzhiT22KFXB18KYNoZP7yZg'
-    // test
-    // signerAddress: 'wUVdQ1MGHbK2HFM2CmyzjnqMrgowXvmaNC'
-    // stg
-    // signerAddress: 'wMxKCAzsQBiUURDU3xD3xuSbVo1S9jmf3d'
+    signerAddress: ACH_SIGNER
   }
 }
