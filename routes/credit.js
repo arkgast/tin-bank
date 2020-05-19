@@ -5,7 +5,7 @@ const tinapi = require('tinapi_')
 
 const router = express.Router()
 
-const ASYNC = true
+const ASYNC = false
 
 const getActionDownload = action => {
   const createActionRequest = new tinapi.CreateActionRequest()
@@ -28,11 +28,11 @@ const getActionDownload = action => {
 }
 
 const DELAY = 1000
-const callContinueWithDelay = (action, actionCreated) => {
+const callContinue = action => {
   const timer = setTimeout(async () => {
     debug('CALL CONTINUE')
     const api = new tinapi.ActionApi()
-    const actionSigned = await api.signAction(actionCreated.action_id)
+    const actionSigned = await api.signAction(action.action_id)
 
     const transfer = new tinapi.TransferApi()
     const actionContinue = await transfer.continueP2Ptranfer(action.action_id, {
@@ -55,7 +55,7 @@ const signAction = async action => {
   const api = new tinapi.ActionApi()
 
   if (ASYNC) {
-    callContinueWithDelay(action, action)
+    callContinue(action)
     return action
   }
 

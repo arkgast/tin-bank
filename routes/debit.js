@@ -51,12 +51,12 @@ const createIOU = action => {
   return sdk.iou.write(claims).sign(signers)
 }
 
-const DELAY = 2000
-const callContinueWithDelay = (action, actionCreated, iou) => {
+const DELAY = 1000
+const callContinue = (action, iou) => {
   const timer = setTimeout(async () => {
     debug('CALL CONTINUE')
     const api = new tinapi.ActionApi()
-    const actionSigned = await api.signOffline(actionCreated.action_id, iou)
+    const actionSigned = await api.signOffline(action.action_id, iou)
 
     const transfer = new tinapi.TransferApi()
     const actionContinue = await transfer.continueP2Ptranfer(action.action_id, {
@@ -80,7 +80,7 @@ const signAction = async action => {
   const iou = createIOU(action)
 
   if (ASYNC) {
-    callContinueWithDelay(action, action, iou)
+    callContinue(action, iou)
     return action
   }
 
