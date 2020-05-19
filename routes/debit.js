@@ -90,7 +90,7 @@ const signAction = async action => {
 
 router.post('/', async (req, res) => {
   const action = req.body
-  debug(JSON.stringify(action, null, 2))
+  debug('UPLOAD %O', action)
 
   const actionCreated = await createAction(action)
   const actionSigned = await signAction(actionCreated)
