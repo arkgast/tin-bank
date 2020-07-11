@@ -5,46 +5,45 @@ const tinapi = require('tinapi_')
 const DELAY = 0
 const ASYNC = true
 
-const buildUploadAction = action => {
+const buildUploadAction = mainAction => {
   const createActionRequest = new tinapi.CreateActionRequest()
   createActionRequest.source = config.get('bank.signerAddress')
-  createActionRequest.target = action.snapshot.source.signer.handle
-  createActionRequest.amount = action.amount
-  createActionRequest.symbol = action.symbol
+  createActionRequest.target = mainAction.snapshot.source.signer.handle
+  createActionRequest.amount = mainAction.amount
+  createActionRequest.symbol = mainAction.symbol
   createActionRequest.labels = {
-    tx_ref: action.labels.tx_ref,
+    tx_ref: mainAction.labels.tx_ref,
     type: 'UPLOAD'
   }
 
   return createActionRequest
 }
 
-const buildDownloadAction = action => {
+const buildDownloadAction = mainAction => {
   const createActionRequest = new tinapi.CreateActionRequest()
-  createActionRequest.amount = action.amount
-  createActionRequest.symbol = action.symbol
+  createActionRequest.amount = mainAction.amount
+  createActionRequest.symbol = mainAction.symbol
   createActionRequest.labels = {
-    tx_ref: action.labels.tx_ref,
+    tx_ref: mainAction.labels.tx_ref,
     type: 'DOWNLOAD'
   }
   createActionRequest.target = config.get('bank.signerAddress')
 
-  const { actionStatus } = action.labels
-  if (actionStatus === 'REJECTED') {
-    createActionRequest.source = action.snapshot.source.signer.handle
+  if (mainAction.labels.status === 'REJECTED') {
+    createActionRequest.source = mainAction.snapshot.source.signer.handle
   } else {
-    createActionRequest.source = action.snapshot.target.signer.handle
+    createActionRequest.source = mainAction.snapshot.target.signer.handle
   }
 
   return createActionRequest
 }
 
-const buildAction = (action, type) => {
+const buildAction = (mainAction, type) => {
   switch (type) {
     case 'UPLOAD':
-      return buildUploadAction(action)
+      return buildUploadAction(mainAction)
     case 'DOWNLOAD':
-      return buildDownloadAction(action)
+      return buildDownloadAction(mainAction)
   }
 }
 

@@ -5,11 +5,11 @@ const { createAction, signAction } = require('../helpers/api')
 const router = express.Router()
 
 router.post('/', async (req, res) => {
-  const action = req.body
-  const mainActionId = action.action_id
-  debug('MAIN ACTION %O', action)
+  const mainAction = req.body
+  const mainActionId = mainAction.action_id
+  debug('MAIN ACTION %O', mainAction)
 
-  const actionUpload = await createAction(action, 'UPLOAD')
+  const actionUpload = await createAction(mainAction, 'UPLOAD')
   debug('UPLOAD CREATED %O', actionUpload)
 
   const actionSigned = await signAction(actionUpload, mainActionId)
