@@ -27,7 +27,7 @@
   },
   "homepage": "https://github.com/arkgast/tin-bank#readme",
   "devDependencies": {
-    "@commitlint/cli": "^8.2.0",
+    "@commitlint/cli": "^9.1.1",
     "@commitlint/config-conventional": "^8.2.0",
     "cz-conventional-changelog": "^3.0.2",
     "eslint": "^6.5.1",
@@ -52,6 +52,7 @@
     "config": "^3.2.3",
     "dotenv": "^8.1.0",
     "express": "^4.17.1",
+    "lodash": "^4.17.19",
     "module-alias": "^2.2.2",
     "tinapi_": "^0.3.8"
   }
