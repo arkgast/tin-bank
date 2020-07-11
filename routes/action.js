@@ -1,6 +1,6 @@
 const express = require('express')
-const debug = require('debug')('tin-bank:action')
 const tinapi = require('tinapi_')
+const debug = require('debug')('tin-bank:action')
 
 const router = express.Router()
 

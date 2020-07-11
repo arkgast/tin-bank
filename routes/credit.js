@@ -5,9 +5,10 @@ const tinapi = require('tinapi_')
 
 const router = express.Router()
 
-const ASYNC = false
+const ASYNC = true
+const DELAY = 500
 
-const getActionDownload = action => {
+const getDownloadAction = action => {
   const createActionRequest = new tinapi.CreateActionRequest()
   createActionRequest.amount = action.amount
   createActionRequest.symbol = action.symbol
@@ -17,8 +18,8 @@ const getActionDownload = action => {
   }
   createActionRequest.target = config.get('bank.signerAddress')
 
-  const { status } = action.labels
-  if (status === 'REJECTED' || status === 'ERROR') {
+  const { actionStatus } = action.labels
+  if (actionStatus === 'REJECTED') {
     createActionRequest.source = action.snapshot.source.signer.handle
   } else {
     createActionRequest.source = action.snapshot.target.signer.handle
@@ -27,10 +28,16 @@ const getActionDownload = action => {
   return createActionRequest
 }
 
-const DELAY = 1000
+const createAction = async action => {
+  const api = new tinapi.ActionApi()
+  const actionDownload = getDownloadAction(action)
+  const actionCreated = await api.createAction(actionDownload)
+  return actionCreated
+}
+
 const callContinue = action => {
   const timer = setTimeout(async () => {
-    debug('CALL CONTINUE')
+    debug('CALL CONTINUE ENDPOINT')
     const api = new tinapi.ActionApi()
     const actionSigned = await api.signAction(action.action_id)
 
@@ -39,37 +46,33 @@ const callContinue = action => {
       actionSigned
     })
 
-    debug('CONTINUE RESPONSE %O', actionContinue)
+    debug('CONTINUE ENDPOINT RESPONSE %O', actionContinue)
     clearTimeout(timer)
   }, DELAY)
 }
 
-const createAction = async action => {
-  const api = new tinapi.ActionApi()
-  const actionDownload = getActionDownload(action)
-  const actionCreated = await api.createAction(actionDownload)
-  return actionCreated
-}
-
-const signAction = async action => {
+const signAction = async (downloadAction, mainActionId) => {
   const api = new tinapi.ActionApi()
 
   if (ASYNC) {
-    callContinue(action)
-    return action
+    callContinue(downloadAction)
+    return downloadAction
   }
 
-  const actionSigned = await api.signAction(action.action_id)
+  const actionSigned = await api.signAction(downloadAction.action_id)
   return actionSigned
 }
 
 router.post('/', async (req, res) => {
   const action = req.body
-  debug('CREDIT %O', action)
+  const mainActionId = action.action_id
+  debug('MAIN ACTION %O', action)
 
-  const actionCreated = await createAction(action)
-  const actionSigned = await signAction(actionCreated)
-  debug('ACTION SIGNED %O', actionSigned)
+  const actionDownload = await createAction(action)
+  debug('DOWNLOAD CREATED %O', actionDownload)
+
+  const actionSigned = await signAction(actionDownload, mainActionId)
+  debug('DOWNLOAD SIGNED %O', actionSigned)
 
   res.send(actionSigned)
 })

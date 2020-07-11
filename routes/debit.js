@@ -2,13 +2,13 @@ const express = require('express')
 const config = require('config')
 const debug = require('debug')('tin-bank:debit')
 const tinapi = require('tinapi_')
-const sdk = require('@webwallet/sdk')
 
 const router = express.Router()
 
-const ASYNC = false
+const ASYNC = true
+const DELAY = 500
 
-const getActionUpload = action => {
+const getUploadAction = action => {
   const createActionRequest = new tinapi.CreateActionRequest()
   createActionRequest.source = config.get('bank.signerAddress')
   createActionRequest.target = action.snapshot.source.signer.handle
@@ -22,79 +22,51 @@ const getActionUpload = action => {
   return createActionRequest
 }
 
-const getClaims = action => {
-  const date = new Date()
-  return {
-    amount: action.amount,
-    domain: 'achtin.minka.io',
-    expiry: date.toISOString(),
-    source: config.get('bank.signerAddress'),
-    symbol: config.get('ach.signerAddress'),
-    target: action.snapshot.target.signer.handle
-  }
-}
-
-const getSigners = () => {
-  return [
-    {
-      secret: config.get('bank.secretKey'),
-      public: config.get('bank.publicKey'),
-      scheme: 'ecdsa-ed25519',
-      signer: config.get('bank.signerAddress')
-    }
-  ]
-}
-
-const createIOU = action => {
-  const claims = getClaims(action)
-  const signers = getSigners()
-  return sdk.iou.write(claims).sign(signers)
-}
-
-const DELAY = 1000
-const callContinue = (action, iou) => {
-  const timer = setTimeout(async () => {
-    debug('CALL CONTINUE')
-    const api = new tinapi.ActionApi()
-    const actionSigned = await api.signOffline(action.action_id, iou)
-
-    const transfer = new tinapi.TransferApi()
-    const actionContinue = await transfer.continueP2Ptranfer(action.action_id, {
-      actionSigned
-    })
-
-    debug('CONTINUE RESPONSE %O', actionContinue)
-    clearTimeout(timer)
-  }, DELAY)
-}
-
 const createAction = async action => {
   const api = new tinapi.ActionApi()
-  const actionUpload = getActionUpload(action)
+  const actionUpload = getUploadAction(action)
   const actionCreated = await api.createAction(actionUpload)
   return actionCreated
 }
 
-const signAction = async action => {
+const callContinue = (uploadAction, mainActionId) => {
+  const timer = setTimeout(async () => {
+    debug('CALL CONTINUE ENDPOINT')
+    const actionApi = new tinapi.ActionApi()
+    const uploadSigned = await actionApi.signAction(uploadAction.action_id)
+
+    const transferApi = new tinapi.TransferApi()
+    const actionContinue = await transferApi.continueP2Ptranfer(mainActionId, {
+      actionSigned: uploadSigned
+    })
+
+    debug('CONTINUE ENDPOINT RESPONSE %O', actionContinue)
+    clearTimeout(timer)
+  }, DELAY)
+}
+
+const signAction = async (uploadAction, mainActionId) => {
   const api = new tinapi.ActionApi()
-  const iou = createIOU(action)
 
   if (ASYNC) {
-    callContinue(action, iou)
-    return action
+    callContinue(uploadAction, mainActionId)
+    return uploadAction
   }
 
-  const actionSigned = await api.signOffline(action.action_id, iou)
+  const actionSigned = await api.signAction(uploadAction.action_id)
   return actionSigned
 }
 
 router.post('/', async (req, res) => {
   const action = req.body
-  debug('UPLOAD %O', action)
+  const mainActionId = action.action_id
+  debug('MAIN ACTION %O', action)
 
-  const actionCreated = await createAction(action)
-  const actionSigned = await signAction(actionCreated)
-  debug('ACTION UPLOAD SIGNED %O', actionSigned)
+  const actionUpload = await createAction(action)
+  debug('UPLOAD CREATED %O', actionUpload)
+
+  const actionSigned = await signAction(actionUpload, mainActionId)
+  debug('UPLOAD SIGNED %O', actionSigned)
 
   res.send(actionSigned)
 })

@@ -5,7 +5,7 @@ const router = express.Router()
 
 router.post('/', (req, res) => {
   const action = req.body
-  debug(action)
+  debug('STATUS %O', action)
   res.send(action)
 })
 
