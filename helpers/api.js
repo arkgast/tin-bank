@@ -10,7 +10,9 @@ const DEFAULT_CONFIG = {
   continueCallDelay: 0,
   responseCallDelay: 0,
   asyncFlow: true,
-  error: null
+  error: null,
+  regularFlowError: true,
+  reverseFlowError: false
 }
 
 const sleep = async timeMs => {
@@ -22,17 +24,56 @@ const sleep = async timeMs => {
   })
 }
 
-const allowCreateAction = (action, actionType) => {
-  const endpointConfig = action.labels.config[actionType.toLowerCase()]
-  if (!endpointConfig.createAction) {
+const shouldFaildOnSign = (endpointConfig, actionType, mainActionStatus) => {
+  const { signAction, regularFlowError, reverseFlowError } = endpointConfig
+  switch (actionType) {
+    case 'UPLOAD': {
+      return regularFlowError && !signAction
+    }
+    case 'SEND': {
+      return regularFlowError && !signAction
+    }
+    case 'DOWNLOAD': {
+      return (
+        !signAction &&
+        ((mainActionStatus === 'COMPLETED' && regularFlowError) ||
+          (mainActionStatus === 'REJECTED' && reverseFlowError))
+      )
+    }
+    case 'REJECT': {
+      return reverseFlowError && !signAction
+    }
+  }
+}
+
+const shouldFaildOnCreate = (endpointConfig, actionType, mainActionStatus) => {
+  const { createAction, regularFlowError, reverseFlowError } = endpointConfig
+  switch (actionType) {
+    case 'UPLOAD': {
+      return regularFlowError && !createAction
+    }
+    case 'DOWNLOAD': {
+      return (
+        !createAction &&
+        ((mainActionStatus === 'COMPLETED' && regularFlowError) ||
+          (mainActionStatus === 'REJECTED' && reverseFlowError))
+      )
+    }
+  }
+}
+
+const allowCreateAction = (mainAction, actionType) => {
+  const endpointConfig = mainAction.labels.config[actionType.toLowerCase()]
+  const mainActionStatus = mainAction.labels.status
+  if (shouldFaildOnCreate(endpointConfig, actionType, mainActionStatus)) {
     throw new BankError('Cannot create action')
   }
 }
 
-const allowSignAction = action => {
-  const actionType = action.labels.type.toLowerCase()
+const allowSignAction = (action, mainActionStatus) => {
+  const actionType = action.labels.type
   const endpointConfig = action.labels.config[actionType.toLowerCase()]
-  if (!endpointConfig.signAction) {
+  if (shouldFaildOnSign(endpointConfig, actionType, mainActionStatus)) {
     throw new BankError('Cannot sign action')
   }
 }
@@ -43,7 +84,7 @@ const setupConfig = (action, actionType) => {
   const endpointConfigExists = !_.isNil(endpointConfig)
 
   endpointConfig = endpointConfigExists
-    ? _.merge(DEFAULT_CONFIG, endpointConfig)
+    ? _.merge({}, DEFAULT_CONFIG, endpointConfig)
     : DEFAULT_CONFIG
 
   _.merge(action, { labels: { config: { [configProperty]: endpointConfig } } })
@@ -121,8 +162,8 @@ const callContinueEndpoint = async (action, mainActionId) => {
   debug('CONTINUE ENDPOINT RESPONSE %O', actionContinue)
 }
 
-const signAction = async (action, mainActionId) => {
-  allowSignAction(action)
+const signAction = async (action, mainActionStatus) => {
+  allowSignAction(action, mainActionStatus)
   const api = new tinapi.ActionApi()
   const actionSigned = await api.signAction(action.action_id)
   actionSigned.labels.config = action.labels.config

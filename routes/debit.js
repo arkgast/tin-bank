@@ -26,7 +26,8 @@ router.post('/', async (req, res) => {
     actionUpload = await createAction(mainAction, 'UPLOAD')
     debug('UPLOAD CREATED %O', actionUpload)
 
-    const actionSigned = await signAction(actionUpload, mainActionId)
+    const mainActionStatus = mainAction.labels.status
+    const actionSigned = await signAction(actionUpload, mainActionStatus)
     debug('UPLOAD SIGNED %O', actionSigned)
 
     const isAsyncFlow = mainAction.labels.config.upload.asyncFlow

@@ -26,7 +26,8 @@ router.post('/', async (req, res) => {
     actionDownload = await createAction(mainAction, 'DOWNLOAD')
     debug('DOWNLOAD CREATED %O', actionDownload)
 
-    const actionSigned = await signAction(actionDownload, mainActionId)
+    const mainActionStatus = mainAction.labels.status
+    const actionSigned = await signAction(actionDownload, mainActionStatus)
     debug('DOWNLOAD SIGNED %O', actionSigned)
 
     const isAsyncFlow = mainAction.labels.config.download.asyncFlow
