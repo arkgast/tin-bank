@@ -16,13 +16,11 @@ const router = express.Router()
 router.post('/', async (req, res) => {
   const mainAction = req.body
   setupConfig(mainAction, 'UPLOAD')
+  debug('MAIN ACTION %O', mainAction)
 
   let actionUpload
 
   try {
-    const mainActionId = mainAction.action_id
-    debug('MAIN ACTION %O', mainAction)
-
     actionUpload = await createAction(mainAction, 'UPLOAD')
     debug('UPLOAD CREATED %O', actionUpload)
 
@@ -32,18 +30,27 @@ router.post('/', async (req, res) => {
 
     const isAsyncFlow = mainAction.labels.config.upload.asyncFlow
     if (isAsyncFlow) {
-      callContinueEndpoint(actionSigned, mainActionId)
+      callContinueEndpoint(actionSigned, mainAction.action_id)
       return res.send(actionUpload)
     }
 
     res.send(actionSigned)
   } catch (error) {
+    console.error({ errorMessage: error.message })
     const errorSanitized = sanitizeError(actionUpload, error)
     if (_.isNumber(errorSanitized)) {
       return res.sendStatus(errorSanitized)
     }
+
     const actionError = setActionError(actionUpload, errorSanitized)
     debug('ACTION ERROR %O', actionError)
+
+    const isAsyncFlow = mainAction.labels.config.upload.asyncFlow
+    if (isAsyncFlow) {
+      callContinueEndpoint(actionError, mainAction.action_id)
+      return res.send(actionUpload)
+    }
+
     res.status(400).send(actionError)
   }
 })

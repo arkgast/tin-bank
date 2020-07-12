@@ -41,7 +41,7 @@ const shouldFaildOnSign = (endpointConfig, actionType, mainActionStatus) => {
       )
     }
     case 'REJECT': {
-      return reverseFlowError && !signAction
+      return !signAction
     }
   }
 }
