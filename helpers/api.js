@@ -5,8 +5,8 @@ const _ = require('lodash')
 const { BankError } = require('./errors.js')
 
 const DEFAULT_CONFIG = {
-  createAction: true,
-  signAction: true,
+  createActionError: false,
+  signActionError: false,
   continueCallDelay: 0,
   responseCallDelay: 0,
   asyncFlow: true,
@@ -25,36 +25,40 @@ const sleep = async timeMs => {
 }
 
 const shouldFaildOnSign = (endpointConfig, actionType, mainActionStatus) => {
-  const { signAction, regularFlowError, reverseFlowError } = endpointConfig
+  const { signActionError, regularFlowError, reverseFlowError } = endpointConfig
   switch (actionType) {
     case 'UPLOAD': {
-      return regularFlowError && !signAction
+      return regularFlowError && signActionError
     }
     case 'SEND': {
-      return regularFlowError && !signAction
+      return regularFlowError && signActionError
     }
     case 'DOWNLOAD': {
       return (
-        !signAction &&
+        signActionError &&
         ((mainActionStatus === 'COMPLETED' && regularFlowError) ||
           (mainActionStatus === 'REJECTED' && reverseFlowError))
       )
     }
     case 'REJECT': {
-      return !signAction
+      return signActionError
     }
   }
 }
 
 const shouldFaildOnCreate = (endpointConfig, actionType, mainActionStatus) => {
-  const { createAction, regularFlowError, reverseFlowError } = endpointConfig
+  const {
+    createActionError,
+    regularFlowError,
+    reverseFlowError
+  } = endpointConfig
   switch (actionType) {
     case 'UPLOAD': {
-      return regularFlowError && !createAction
+      return regularFlowError && createActionError
     }
     case 'DOWNLOAD': {
       return (
-        !createAction &&
+        createActionError &&
         ((mainActionStatus === 'COMPLETED' && regularFlowError) ||
           (mainActionStatus === 'REJECTED' && reverseFlowError))
       )
