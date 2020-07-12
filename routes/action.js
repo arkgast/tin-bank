@@ -1,6 +1,13 @@
 const express = require('express')
 const debug = require('debug')('tin-bank:action')
-const { setupConfig, signAction } = require('../helpers/api')
+const _ = require('lodash')
+
+const {
+  sanitizeError,
+  setActionError,
+  setupConfig,
+  signAction
+} = require('../helpers/api')
 
 const router = express.Router()
 
@@ -15,8 +22,13 @@ router.post('/', async (req, res) => {
 
     res.send(actionSigned)
   } catch (error) {
-    console.error(error.message)
-    res.sendStatus(500)
+    const errorSanitized = sanitizeError(action, error)
+    if (_.isNumber(errorSanitized)) {
+      return res.sendStatus(errorSanitized)
+    }
+    const actionError = setActionError(action, errorSanitized)
+    debug('ACTION ERROR %O', actionError)
+    res.status(400).send(actionError)
   }
 })
 

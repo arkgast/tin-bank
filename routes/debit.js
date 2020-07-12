@@ -1,8 +1,12 @@
 const express = require('express')
 const debug = require('debug')('tin-bank:debit')
+const _ = require('lodash')
+
 const {
   callContinueEndpoint,
   createAction,
+  sanitizeError,
+  setActionError,
   setupConfig,
   signAction
 } = require('../helpers/api')
@@ -13,11 +17,13 @@ router.post('/', async (req, res) => {
   const mainAction = req.body
   setupConfig(mainAction, 'UPLOAD')
 
+  let actionUpload
+
   try {
     const mainActionId = mainAction.action_id
     debug('MAIN ACTION %O', mainAction)
 
-    const actionUpload = await createAction(mainAction, 'UPLOAD')
+    actionUpload = await createAction(mainAction, 'UPLOAD')
     debug('UPLOAD CREATED %O', actionUpload)
 
     const actionSigned = await signAction(actionUpload, mainActionId)
@@ -31,8 +37,13 @@ router.post('/', async (req, res) => {
 
     res.send(actionSigned)
   } catch (error) {
-    console.error(error.message)
-    res.sendStatus(500)
+    const errorSanitized = sanitizeError(actionUpload, error)
+    if (_.isNumber(errorSanitized)) {
+      return res.sendStatus(errorSanitized)
+    }
+    const actionError = setActionError(actionUpload, errorSanitized)
+    debug('ACTION ERROR %O', actionError)
+    res.status(400).send(actionError)
   }
 })
 

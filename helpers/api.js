@@ -2,7 +2,7 @@ const config = require('config')
 const debug = require('debug')('tin-bank:helpers:api')
 const tinapi = require('tinapi_')
 const _ = require('lodash')
-const { BankDefaultError } = require('./errors.js')
+const { BankError } = require('./errors.js')
 
 const DEFAULT_CONFIG = {
   createAction: true,
@@ -10,7 +10,7 @@ const DEFAULT_CONFIG = {
   continueCallDelay: 0,
   responseCallDelay: 0,
   asyncFlow: true,
-  error: BankDefaultError
+  error: null
 }
 
 const sleep = async timeMs => {
@@ -25,7 +25,7 @@ const sleep = async timeMs => {
 const allowCreateAction = (action, actionType) => {
   const endpointConfig = action.labels.config[actionType.toLowerCase()]
   if (!endpointConfig.createAction) {
-    throw new Error('Cannot create action')
+    throw new BankError('Cannot create action')
   }
 }
 
@@ -33,7 +33,7 @@ const allowSignAction = action => {
   const actionType = action.labels.type.toLowerCase()
   const endpointConfig = action.labels.config[actionType.toLowerCase()]
   if (!endpointConfig.signAction) {
-    throw new Error('Cannot sign action')
+    throw new BankError('Cannot sign action')
   }
 }
 
@@ -57,7 +57,8 @@ const buildUploadAction = mainAction => {
   createActionRequest.symbol = mainAction.symbol
   createActionRequest.labels = {
     tx_ref: mainAction.labels.tx_ref,
-    type: 'UPLOAD'
+    type: 'UPLOAD',
+    config: mainAction.labels.config
   }
 
   return createActionRequest
@@ -69,7 +70,8 @@ const buildDownloadAction = mainAction => {
   createActionRequest.symbol = mainAction.symbol
   createActionRequest.labels = {
     tx_ref: mainAction.labels.tx_ref,
-    type: 'DOWNLOAD'
+    type: 'DOWNLOAD',
+    config: mainAction.labels.config
   }
   createActionRequest.target = config.get('bank.signerAddress')
 
@@ -92,13 +94,18 @@ const buildAction = (mainAction, type) => {
 }
 
 const createAction = async (mainAction, type) => {
-  allowCreateAction(mainAction, type)
+  let action
+  try {
+    const api = new tinapi.ActionApi()
+    action = buildAction(mainAction, type)
+    allowCreateAction(mainAction, type)
 
-  const api = new tinapi.ActionApi()
-  const action = buildAction(mainAction, type)
-  const actionCreated = await api.createAction(action)
-  actionCreated.labels.config = mainAction.labels.config
-  return actionCreated
+    const actionCreated = await api.createAction(action)
+    actionCreated.labels.config = mainAction.labels.config
+    return actionCreated
+  } catch (error) {
+    return action
+  }
 }
 
 const callContinueEndpoint = async (action, mainActionId) => {
@@ -122,9 +129,26 @@ const signAction = async (action, mainActionId) => {
   return actionSigned
 }
 
+const setActionError = (action, error) => {
+  return _.merge(action, { labels: { status: 'ERROR' }, error })
+}
+
+const sanitizeError = (action, error) => {
+  const actionType = action.labels.type.toLowerCase()
+  const config = action.labels.config[actionType]
+
+  if (!_.isNil(config.error)) {
+    return config.error
+  }
+
+  return error instanceof BankError ? error.toPlainObject() : error
+}
+
 module.exports = {
   callContinueEndpoint,
   createAction,
+  sanitizeError,
+  setActionError,
   setupConfig,
   signAction
 }

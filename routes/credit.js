@@ -1,8 +1,12 @@
 const express = require('express')
 const debug = require('debug')('tin-bank:credit')
+const _ = require('lodash')
+
 const {
   callContinueEndpoint,
   createAction,
+  sanitizeError,
+  setActionError,
   setupConfig,
   signAction
 } = require('../helpers/api')
@@ -14,10 +18,12 @@ router.post('/', async (req, res) => {
   setupConfig(mainAction, 'DOWNLOAD')
   debug('MAIN ACTION %O', mainAction)
 
+  let actionDownload
+
   try {
     const mainActionId = mainAction.action_id
 
-    const actionDownload = await createAction(mainAction, 'DOWNLOAD')
+    actionDownload = await createAction(mainAction, 'DOWNLOAD')
     debug('DOWNLOAD CREATED %O', actionDownload)
 
     const actionSigned = await signAction(actionDownload, mainActionId)
@@ -31,8 +37,13 @@ router.post('/', async (req, res) => {
 
     res.send(actionSigned)
   } catch (error) {
-    console.error(error.message)
-    res.sendStatus(500)
+    const errorSanitized = sanitizeError(actionDownload, error)
+    if (_.isNumber(errorSanitized)) {
+      return res.sendStatus(errorSanitized)
+    }
+    const actionError = setActionError(actionDownload, errorSanitized)
+    debug('ACTION ERROR %O', actionError)
+    res.status(400).send(actionError)
   }
 })
 
