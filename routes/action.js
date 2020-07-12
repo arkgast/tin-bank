@@ -1,18 +1,23 @@
 const express = require('express')
-const tinapi = require('tinapi_')
 const debug = require('debug')('tin-bank:action')
+const { setupConfig, signAction } = require('../helpers/api')
 
 const router = express.Router()
 
 router.post('/', async (req, res) => {
   const action = req.body
   debug('ACTION %O', action)
+  setupConfig(action, action.labels.type)
 
-  const api = new tinapi.ActionApi()
-  const actionSigned = await api.signAction(action.action_id)
-  debug('ACTION SIGNED %O', actionSigned)
+  try {
+    const actionSigned = signAction(action)
+    debug('ACTION SIGNED %O', actionSigned)
 
-  res.json(actionSigned)
+    res.send(actionSigned)
+  } catch (error) {
+    console.error(error.message)
+    res.sendStatus(500)
+  }
 })
 
 module.exports = router

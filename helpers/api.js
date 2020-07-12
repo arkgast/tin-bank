@@ -1,9 +1,42 @@
 const config = require('config')
 const debug = require('debug')('tin-bank:helpers/api')
 const tinapi = require('tinapi_')
+const _ = require('lodash')
 
-const DELAY = 0
-const ASYNC = true
+const DEFAULT_CONFIG = {
+  createAction: true,
+  signAction: true,
+  continueCallDelay: 0,
+  responseCallDelay: 0,
+  asyncFlow: true
+}
+
+const allowCreateAction = (action, actionType) => {
+  const endpointConfig = action.labels.config[actionType.toLowerCase()]
+  if (!endpointConfig.createAction) {
+    throw new Error('Cannot create action')
+  }
+}
+
+const allowSignAction = action => {
+  const actionType = action.labels.type.toLowerCase()
+  const endpointConfig = action.labels.config[actionType.toLowerCase()]
+  if (!endpointConfig.signAction) {
+    throw new Error('Cannot sign action')
+  }
+}
+
+const setupConfig = (action, actionType) => {
+  const configProperty = actionType.toLowerCase()
+  let endpointConfig = _.get(action, ['labels', 'config', configProperty])
+  const endpointConfigExists = !_.isNil(endpointConfig)
+
+  endpointConfig = endpointConfigExists
+    ? _.merge(DEFAULT_CONFIG, endpointConfig)
+    : DEFAULT_CONFIG
+
+  _.merge(action, { labels: { config: { [configProperty]: endpointConfig } } })
+}
 
 const buildUploadAction = mainAction => {
   const createActionRequest = new tinapi.CreateActionRequest()
@@ -47,42 +80,53 @@ const buildAction = (mainAction, type) => {
   }
 }
 
-const createAction = async (action, type) => {
+const createAction = async (mainAction, type) => {
+  allowCreateAction(mainAction, type)
+
   const api = new tinapi.ActionApi()
-  const actionUpload = buildAction(action, type)
-  const actionCreated = await api.createAction(actionUpload)
+  const action = buildAction(mainAction, type)
+  const actionCreated = await api.createAction(action)
+  actionCreated.labels.config = mainAction.labels.config
   return actionCreated
 }
 
 const callContinue = (action, mainActionId) => {
-  const timer = setTimeout(async () => {
-    debug('CALL CONTINUE ENDPOINT')
-    const actionApi = new tinapi.ActionApi()
-    const uploadSigned = await actionApi.signAction(action.action_id)
+  const { continueCallDelay } = action.labels.config
 
+  const timer = setTimeout(async () => {
+    debug('SIGNING IN PROCESS')
+    allowSignAction(action)
+    const actionApi = new tinapi.ActionApi()
+    const actionSigned = await actionApi.signAction(action.action_id)
+
+    debug('CALL CONTINUE ENDPOINT')
     const transferApi = new tinapi.TransferApi()
     const actionContinue = await transferApi.continueP2Ptranfer(mainActionId, {
-      actionSigned: uploadSigned
+      actionSigned: actionSigned
     })
-
     debug('CONTINUE ENDPOINT RESPONSE %O', actionContinue)
+
     clearTimeout(timer)
-  }, DELAY)
+  }, continueCallDelay)
 }
 
 const signAction = async (action, mainActionId) => {
   const api = new tinapi.ActionApi()
+  const actionType = action.labels.type.toLowerCase()
+  const isAsyncFlow = action.labels.config[actionType].asyncFlow
 
-  if (ASYNC) {
+  if (isAsyncFlow) {
     callContinue(action, mainActionId)
     return action
   }
 
+  allowSignAction(action)
   const actionSigned = await api.signAction(action.action_id)
   return actionSigned
 }
 
 module.exports = {
   createAction,
+  setupConfig,
   signAction
 }

@@ -1,21 +1,28 @@
 const express = require('express')
 const debug = require('debug')('tin-bank:debit')
-const { createAction, signAction } = require('../helpers/api')
+const { createAction, setupConfig, signAction } = require('../helpers/api')
 
 const router = express.Router()
 
 router.post('/', async (req, res) => {
   const mainAction = req.body
-  const mainActionId = mainAction.action_id
-  debug('MAIN ACTION %O', mainAction)
+  setupConfig(mainAction, 'UPLOAD')
 
-  const actionUpload = await createAction(mainAction, 'UPLOAD')
-  debug('UPLOAD CREATED %O', actionUpload)
+  try {
+    const mainActionId = mainAction.action_id
+    debug('MAIN ACTION %O', mainAction)
 
-  const actionSigned = await signAction(actionUpload, mainActionId)
-  debug('UPLOAD SIGNED %O', actionSigned)
+    const actionUpload = await createAction(mainAction, 'UPLOAD')
+    debug('UPLOAD CREATED %O', actionUpload)
 
-  res.send(actionSigned)
+    const actionSigned = await signAction(actionUpload, mainActionId)
+    debug('UPLOAD SIGNED %O', actionSigned)
+
+    res.send(actionSigned)
+  } catch (error) {
+    console.error(error.message)
+    res.sendStatus(500)
+  }
 })
 
 module.exports = router
