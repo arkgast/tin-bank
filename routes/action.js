@@ -10,7 +10,7 @@ router.post('/', async (req, res) => {
   setupConfig(action, action.labels.type)
 
   try {
-    const actionSigned = signAction(action)
+    const actionSigned = await signAction(action)
     debug('ACTION SIGNED %O', actionSigned)
 
     res.send(actionSigned)
