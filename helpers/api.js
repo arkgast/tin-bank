@@ -1,14 +1,16 @@
 const config = require('config')
-const debug = require('debug')('tin-bank:helpers/api')
+const debug = require('debug')('tin-bank:helpers:api')
 const tinapi = require('tinapi_')
 const _ = require('lodash')
+const { BankDefaultError } = require('./errors.js')
 
 const DEFAULT_CONFIG = {
   createAction: true,
   signAction: true,
   continueCallDelay: 0,
   responseCallDelay: 0,
-  asyncFlow: true
+  asyncFlow: true,
+  error: BankDefaultError
 }
 
 const sleep = async timeMs => {
@@ -100,10 +102,7 @@ const createAction = async (mainAction, type) => {
 
 const callContinueEndpoint = async (action, mainActionId) => {
   const actionType = action.labels.type.toLowerCase()
-  const isAsyncFlow = action.labels.config[actionType].asyncFlow
-  if (!isAsyncFlow) return
-
-  const { continueCallDelay } = action.labels.config
+  const { continueCallDelay } = action.labels.config[actionType]
   await sleep(continueCallDelay)
 
   debug('CALL CONTINUE ENDPOINT')
@@ -118,6 +117,7 @@ const signAction = async (action, mainActionId) => {
   allowSignAction(action)
   const api = new tinapi.ActionApi()
   const actionSigned = await api.signAction(action.action_id)
+  actionSigned.labels.config = action.labels.config
   return actionSigned
 }
 
