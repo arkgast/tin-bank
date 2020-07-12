@@ -8,16 +8,18 @@ const DEFAULT_CONFIG = {
   createActionError: false,
   signActionError: false,
   continueCallDelay: 0,
-  responseCallDelay: 0,
+  responseDelay: 0,
   asyncFlow: true,
   error: null,
   regularFlowError: true,
   reverseFlowError: false
 }
 
-const sleep = async timeMs => {
+const sleep = async timeSec => {
+  const timeMs = timeSec * 1000
   return new Promise(resolve => {
     const timer = setTimeout(() => {
+      if (timeSec > 0) debug('Sleep is over')
       resolve()
       clearTimeout(timer)
     }, timeMs)
@@ -195,5 +197,6 @@ module.exports = {
   sanitizeError,
   setActionError,
   setupConfig,
-  signAction
+  signAction,
+  sleep
 }

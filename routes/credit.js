@@ -8,7 +8,8 @@ const {
   sanitizeError,
   setActionError,
   setupConfig,
-  signAction
+  signAction,
+  sleep
 } = require('../helpers/api')
 
 const router = express.Router()
@@ -28,12 +29,13 @@ router.post('/', async (req, res) => {
     const actionSigned = await signAction(actionDownload, mainActionStatus)
     debug('DOWNLOAD SIGNED %O', actionSigned)
 
-    const isAsyncFlow = mainAction.labels.config.download.asyncFlow
-    if (isAsyncFlow) {
+    const { asyncFlow, responseDelay } = mainAction.labels.config.download
+    if (asyncFlow) {
       callContinueEndpoint(actionSigned, mainAction.action_id)
       return res.send(actionDownload)
     }
 
+    await sleep(responseDelay)
     res.send(actionSigned)
   } catch (error) {
     const isAsyncFlow = mainAction.labels.config.download.asyncFlow

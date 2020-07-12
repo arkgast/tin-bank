@@ -6,7 +6,8 @@ const {
   sanitizeError,
   setActionError,
   setupConfig,
-  signAction
+  signAction,
+  sleep
 } = require('../helpers/api')
 
 const router = express.Router()
@@ -19,6 +20,10 @@ router.post('/', async (req, res) => {
   try {
     const actionSigned = await signAction(action)
     debug('ACTION SIGNED %O', actionSigned)
+
+    const actionType = action.labels.type.toLowerCase()
+    const { responseDelay } = action.labels.config[actionType]
+    await sleep(responseDelay)
 
     res.send(actionSigned)
   } catch (error) {

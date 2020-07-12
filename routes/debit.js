@@ -8,7 +8,8 @@ const {
   sanitizeError,
   setActionError,
   setupConfig,
-  signAction
+  signAction,
+  sleep
 } = require('../helpers/api')
 
 const router = express.Router()
@@ -28,15 +29,16 @@ router.post('/', async (req, res) => {
     const actionSigned = await signAction(actionUpload, mainActionStatus)
     debug('UPLOAD SIGNED %O', actionSigned)
 
-    const isAsyncFlow = mainAction.labels.config.upload.asyncFlow
-    if (isAsyncFlow) {
+    const { asyncFlow, responseDelay } = mainAction.labels.config.upload
+    if (asyncFlow) {
       callContinueEndpoint(actionSigned, mainAction.action_id)
       return res.send(actionUpload)
     }
 
+    await sleep(responseDelay)
     res.send(actionSigned)
   } catch (error) {
-    const isAsyncFlow = mainAction.labels.config.upload.asyncFlow
+    const { asyncFlow } = mainAction.labels.config.upload
 
     const errorSanitized = sanitizeError(actionUpload, error)
     if (_.isNumber(errorSanitized)) {
@@ -50,7 +52,7 @@ router.post('/', async (req, res) => {
     const actionError = setActionError(actionUpload, errorSanitized)
     debug('ACTION ERROR %O', actionError)
 
-    if (isAsyncFlow) {
+    if (asyncFlow) {
       callContinueEndpoint(actionError, mainAction.action_id)
       return res.send(actionUpload)
     }
