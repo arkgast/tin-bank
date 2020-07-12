@@ -16,6 +16,7 @@ const DEFAULT_CONFIG = {
 const sleep = async timeMs => {
   return new Promise(resolve => {
     const timer = setTimeout(() => {
+      resolve()
       clearTimeout(timer)
     }, timeMs)
   })
