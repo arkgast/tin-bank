@@ -11,6 +11,14 @@ const DEFAULT_CONFIG = {
   asyncFlow: true
 }
 
+const sleep = async timeMs => {
+  return new Promise(resolve => {
+    const timer = setTimeout(() => {
+      clearTimeout(timer)
+    }, timeMs)
+  })
+}
+
 const allowCreateAction = (action, actionType) => {
   const endpointConfig = action.labels.config[actionType.toLowerCase()]
   if (!endpointConfig.createAction) {
@@ -90,42 +98,31 @@ const createAction = async (mainAction, type) => {
   return actionCreated
 }
 
-const callContinue = (action, mainActionId) => {
+const callContinueEndpoint = async (action, mainActionId) => {
+  const actionType = action.labels.type.toLowerCase()
+  const isAsyncFlow = action.labels.config[actionType].asyncFlow
+  if (!isAsyncFlow) return
+
   const { continueCallDelay } = action.labels.config
+  await sleep(continueCallDelay)
 
-  const timer = setTimeout(async () => {
-    debug('SIGNING IN PROCESS')
-    allowSignAction(action)
-    const actionApi = new tinapi.ActionApi()
-    const actionSigned = await actionApi.signAction(action.action_id)
-
-    debug('CALL CONTINUE ENDPOINT')
-    const transferApi = new tinapi.TransferApi()
-    const actionContinue = await transferApi.continueP2Ptranfer(mainActionId, {
-      actionSigned: actionSigned
-    })
-    debug('CONTINUE ENDPOINT RESPONSE %O', actionContinue)
-
-    clearTimeout(timer)
-  }, continueCallDelay)
+  debug('CALL CONTINUE ENDPOINT')
+  const transferApi = new tinapi.TransferApi()
+  const actionContinue = await transferApi.continueP2Ptranfer(mainActionId, {
+    actionSigned: action
+  })
+  debug('CONTINUE ENDPOINT RESPONSE %O', actionContinue)
 }
 
 const signAction = async (action, mainActionId) => {
-  const api = new tinapi.ActionApi()
-  const actionType = action.labels.type.toLowerCase()
-  const isAsyncFlow = action.labels.config[actionType].asyncFlow
-
-  if (isAsyncFlow) {
-    callContinue(action, mainActionId)
-    return action
-  }
-
   allowSignAction(action)
+  const api = new tinapi.ActionApi()
   const actionSigned = await api.signAction(action.action_id)
   return actionSigned
 }
 
 module.exports = {
+  callContinueEndpoint,
   createAction,
   setupConfig,
   signAction
