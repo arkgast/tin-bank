@@ -18,7 +18,7 @@ router.post('/', async (req, res) => {
   setupConfig(mainAction, 'UPLOAD')
   debug('MAIN ACTION %O', mainAction)
 
-  let actionUpload
+  let actionUpload = null
 
   try {
     actionUpload = await createAction(mainAction, 'UPLOAD')
@@ -36,16 +36,20 @@ router.post('/', async (req, res) => {
 
     res.send(actionSigned)
   } catch (error) {
-    console.error({ errorMessage: error.message })
+    const isAsyncFlow = mainAction.labels.config.upload.asyncFlow
+
     const errorSanitized = sanitizeError(actionUpload, error)
     if (_.isNumber(errorSanitized)) {
       return res.sendStatus(errorSanitized)
     }
 
+    if (_.isNil(actionUpload)) {
+      res.status(400).send(errorSanitized)
+    }
+
     const actionError = setActionError(actionUpload, errorSanitized)
     debug('ACTION ERROR %O', actionError)
 
-    const isAsyncFlow = mainAction.labels.config.upload.asyncFlow
     if (isAsyncFlow) {
       callContinueEndpoint(actionError, mainAction.action_id)
       return res.send(actionUpload)

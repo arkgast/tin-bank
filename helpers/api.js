@@ -135,18 +135,13 @@ const buildAction = (mainAction, type) => {
 }
 
 const createAction = async (mainAction, type) => {
-  let action
-  try {
-    const api = new tinapi.ActionApi()
-    action = buildAction(mainAction, type)
-    allowCreateAction(mainAction, type)
+  const action = buildAction(mainAction, type)
+  allowCreateAction(mainAction, type)
 
-    const actionCreated = await api.createAction(action)
-    actionCreated.labels.config = mainAction.labels.config
-    return actionCreated
-  } catch (error) {
-    return action
-  }
+  const api = new tinapi.ActionApi()
+  const actionCreated = await api.createAction(action)
+  actionCreated.labels.config = mainAction.labels.config
+  return actionCreated
 }
 
 const callContinueEndpoint = async (action, mainActionId) => {
@@ -164,6 +159,7 @@ const callContinueEndpoint = async (action, mainActionId) => {
 
 const signAction = async (action, mainActionStatus) => {
   allowSignAction(action, mainActionStatus)
+
   const api = new tinapi.ActionApi()
   const actionSigned = await api.signAction(action.action_id)
   actionSigned.labels.config = action.labels.config
@@ -175,17 +171,21 @@ const setActionError = (action, error) => {
 }
 
 const sanitizeError = (action, error) => {
-  const actionType = action.labels.type.toLowerCase()
-  const config = action.labels.config[actionType]
+  const actionType = _.get(action, 'labels.type')
 
-  if (!_.isNil(config.error)) {
-    return config.error
+  if (!_.isNil(actionType)) {
+    const config = action.labels.config[actionType.toLowerCase()]
+
+    if (!_.isNil(config.error)) {
+      return config.error
+    }
   }
 
   return error instanceof BankError ? error.toPlainObject() : error
 }
 
 module.exports = {
+  buildAction,
   callContinueEndpoint,
   createAction,
   sanitizeError,

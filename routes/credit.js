@@ -18,7 +18,7 @@ router.post('/', async (req, res) => {
   setupConfig(mainAction, 'DOWNLOAD')
   debug('MAIN ACTION %O', mainAction)
 
-  let actionDownload
+  let actionDownload = null
 
   try {
     actionDownload = await createAction(mainAction, 'DOWNLOAD')
@@ -36,16 +36,20 @@ router.post('/', async (req, res) => {
 
     res.send(actionSigned)
   } catch (error) {
-    console.error({ errorMessage: error.message })
+    const isAsyncFlow = mainAction.labels.config.download.asyncFlow
+
     const errorSanitized = sanitizeError(actionDownload, error)
     if (_.isNumber(errorSanitized)) {
       return res.sendStatus(errorSanitized)
     }
 
+    if (_.isNil(actionDownload)) {
+      return res.status(400).send(errorSanitized)
+    }
+
     const actionError = setActionError(actionDownload, errorSanitized)
     debug('ACTION ERROR %O', actionError)
 
-    const isAsyncFlow = mainAction.labels.config.download.asyncFlow
     if (isAsyncFlow) {
       callContinueEndpoint(actionError, mainAction.action_id)
       return res.send(actionDownload)
