@@ -44,7 +44,7 @@ router.post('/', async (req, res) => {
     }
 
     if (_.isNil(actionUpload)) {
-      res.status(400).send(errorSanitized)
+      return res.status(400).send(errorSanitized)
     }
 
     const actionError = setActionError(actionUpload, errorSanitized)
