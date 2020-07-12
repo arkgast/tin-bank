@@ -1,6 +1,11 @@
 const express = require('express')
 const debug = require('debug')('tin-bank:debit')
-const { createAction, setupConfig, signAction } = require('../helpers/api')
+const {
+  callContinueEndpoint,
+  createAction,
+  setupConfig,
+  signAction
+} = require('../helpers/api')
 
 const router = express.Router()
 
@@ -17,6 +22,12 @@ router.post('/', async (req, res) => {
 
     const actionSigned = await signAction(actionUpload, mainActionId)
     debug('UPLOAD SIGNED %O', actionSigned)
+
+    const isAsyncFlow = mainAction.labels.config.upload.asyncFlow
+    if (isAsyncFlow) {
+      callContinueEndpoint(actionSigned, mainActionId)
+      return res.send(actionUpload)
+    }
 
     res.send(actionSigned)
   } catch (error) {
