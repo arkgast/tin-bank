@@ -54,9 +54,11 @@ router.post('/', async (req, res) => {
 
     if (isAsyncFlow) {
       callContinueEndpoint(actionError, mainAction.action_id)
+      debug('ACTION RESPONSE %O', actionDownload)
       return res.send(actionDownload)
     }
 
+    debug('ACTION RESPONSE %O', actionError)
     res.status(400).send(actionError)
   }
 })
