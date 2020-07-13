@@ -173,7 +173,10 @@ const signAction = async (action, mainActionStatus) => {
 }
 
 const setActionError = (action, error) => {
-  return _.merge(action, { labels: { status: 'ERROR' }, error })
+  return _.merge(_.cloneDeep(action), {
+    labels: { status: 'ERROR' },
+    error
+  })
 }
 
 const sanitizeError = (action, error) => {
