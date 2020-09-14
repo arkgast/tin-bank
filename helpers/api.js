@@ -32,7 +32,8 @@ const shouldFaildOnSign = (endpointConfig, actionType, mainActionStatus) => {
     case 'UPLOAD': {
       return regularFlowError && signActionError
     }
-    case 'SEND': {
+    case 'SEND':
+    case 'REQUEST': {
       return regularFlowError && signActionError
     }
     case 'DOWNLOAD': {
