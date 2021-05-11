@@ -52,7 +52,7 @@
     "config": "^3.2.3",
     "dotenv": "^8.1.0",
     "express": "^4.17.1",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "module-alias": "^2.2.2",
     "tinapi_": "^0.3.8"
   }
